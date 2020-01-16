@@ -55,29 +55,19 @@ public class analyzeLog {
 			output.collect(new Text(SingleCountryData[0]), one);
 		}
 	}
-
+	
 	public static class reducer extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
-		private int max=0;
-		private Text maxWord = new Text();
+
 		public void reduce(Text t_key, Iterator<IntWritable> values, OutputCollector<Text,IntWritable> output, Reporter reporter) throws IOException {
-			
-			int sum = 0;
+			Text key = t_key;
+			int frequencyForLog = 0;
 			while (values.hasNext()) {
 				// replace type of value with the actual type of our value
 				IntWritable value = (IntWritable) values.next();
-				sum += value.get();
-
+				frequencyForLog += value.get();
+				
 			}
-			if(sum > max)
-			{
-				max=sum;
-				maxWord.set(t_key);
-			}
-			output.collect(t_key, new IntWritable(sum));
-		}
-		public void displayMax(OutputCollector<Text,IntWritable> output) throws IOException, InterruptedException
-		{
-			output.collect(maxWord, new IntWritable(max));
+			output.collect(key, new IntWritable(frequencyForLog));
 		}
 	}
 	
