@@ -1,0 +1,6 @@
+hadoop fs -mkdir /weatherDir
+hduser@DBMS-LAB-A3-305-23:~/33119/SL6/Input Files$ hadoop fs -put Weather-NCDC '/weatherDir/Weather-NCDC'
+hduser@DBMS-LAB-A3-305-23:~/33119/SL6/Jar folder$ hadoop jar weather.jar weather.MaxTemperature /weatherDir/Weather-NCDC /weatherDir/output
+hduser@DBMS-LAB-A3-305-23:~/33119/SL6/Jar folder$ hadoop fs -cat /weatherDir/output/part-r-00000
+hduser@DBMS-LAB-A3-305-23:~/33119/SL6/Jar folder$ hadoop fs -rm -r /weatherDir/output
+
