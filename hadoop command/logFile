@@ -1,0 +1,4 @@
+hadoop fs -put logFile.csv /logDir/logFile.csv
+hadoop jar analyzelog.jar analyzeLogs.analyzeLog /logDir/logFile.csv /logDir/output
+hadoop fs -cat /logDir/output/part-00000
+
