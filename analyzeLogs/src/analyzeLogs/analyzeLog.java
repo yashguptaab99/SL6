@@ -38,9 +38,11 @@ public class analyzeLog {
 		System.exit(j.waitForCompletion(true) ? 0 : 1);
 	}
 
-	public static class MapForLogger extends Mapper<LongWritable, Text, Text, IntWritable> {
+	public static class MapForLogger extends Mapper<LongWritable, Text, Text, IntWritable> 
+	{
 
-		public void map(LongWritable key, Text value, Context con) throws IOException, InterruptedException {
+		public void map(LongWritable key, Text value, Context con) throws IOException, InterruptedException 
+		{
 			String line = value.toString();
 			String[] words = line.split(",");
 			if(words[2].contains("logout.php") || words[2].contains("login.php")) {
@@ -118,10 +120,12 @@ public class analyzeLog {
 		}
 	}
 
-	public static class ReduceForLogger extends Reducer<Text, IntWritable, Text, IntWritable> {
-		public static Text key = new Text("");;
+	public static class ReduceForLogger extends Reducer<Text, IntWritable, Text, IntWritable> 
+	{
+		public static Text key = new Text("");
 		public static IntWritable max = new IntWritable(0);
-		public void reduce(Text word, Iterable<IntWritable> values, Context con) throws IOException, InterruptedException {
+		public void reduce(Text word, Iterable<IntWritable> values, Context con) throws IOException, InterruptedException 
+		{
 			int sum = 0;										//Variable to Store the Sum of Session Times
 			int lastRecord=0;									//Variable to stare the last processed LogOut time during session calculation
 			ArrayList<Integer> array = new ArrayList<Integer>();//ArrayList to contain and sort the Iterable values 

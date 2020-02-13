@@ -1,18 +1,14 @@
 package weather;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
+import java.io.IOException;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
@@ -35,62 +31,68 @@ public class MaxTemperature
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(IntWritable.class);
 		job.waitForCompletion(true);
-		Configuration conf= new Configuration();
-		conf.set("fs.defaultFS", "hdfs://localhost:50070/user/hduser/");
-		FileSystem fs= FileSystem.get(conf);
-		FileStatus[] status= fs.listStatus(new Path(args[1]));
-		
-		//copy hdfs output file to local folder
-		for(int i=0;i<status.length;i++)
+	}
+	
+	public static class MaxTemperatureMapper extends Mapper<LongWritable,Text,Text,IntWritable>
+	{
+		private static final int MISSING= 9999;
+		public void map(LongWritable key,Text value,Context context) throws IOException,InterruptedException
 		{
-			System.out.println(status[i].getPath());
-			fs.copyToLocalFile(false, status[i].getPath(), new Path("/home/hduser/"+args[1]));
+			String line = value.toString();
+			String year = line.substring(15, 19);
+			int airTemperature;
+			if (line.charAt(87)=='+')
+				airTemperature= Integer.parseInt(line.substring(88, 92));
+			else
+				airTemperature= Integer.parseInt(line.substring(87, 92));
+			
+			if (airTemperature != MISSING)
+				context.write(new Text(year), new IntWritable(airTemperature));
 		}
-		System.out.println("\nYear\tTemperature\n");
-		//display contents of local file
-		BufferedReader br= new BufferedReader(new FileReader("/home/hduser/"+args[1]));
-		String line= null;
-		while((line= br.readLine()) != null)
+	}
+	
+	public static class MaxTemperatureReducer extends Reducer<Text,IntWritable,Text,IntWritable>
+	{
+		public static IntWritable maxValue = new IntWritable(Integer.MIN_VALUE);
+		public static Text maxYear = new Text("");
+		public static IntWritable minValue = new IntWritable(Integer.MAX_VALUE);
+		public static Text minYear = new Text("");
+		public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException,InterruptedException
 		{
-			System.out.println(line);
-		}
-		br.close();
-		Scanner s= new Scanner(new File("/home/hduser/"+args[1]));
-		List<Integer> temps= new ArrayList<Integer>();
-		List<String> years= new ArrayList<String>();
-		while(s.hasNext())
-		{
-			years.add(s.next());
-			temps.add(Integer.parseInt(s.next()));
-		}
-		
-		int max_temp=0,min_temp=999,i=0,j=0;
-		String hottest_year="", coolest_year="";
-		
-		for(int temp: temps)
-		{
-			if(temp>max_temp)
+			int sum = 0,i=0;
+			for(IntWritable val : values)
 			{
-				max_temp=temp;
-				hottest_year=years.get(i);
+				sum+=val.get();
+				i++;
 			}
-			i++;
-		}
-		
-		System.out.println("Hottest Year:"+hottest_year);
-		System.out.println("\tTemperature:"+max_temp/10+" Degree Celcius");
-		
-		for(int temp: temps)
-		{
-			if(temp<min_temp)
+			sum/=i;
+			if(sum > maxValue.get())
 			{
-				min_temp=temp;
-				coolest_year=years.get(j);
+				maxValue.set(sum);
+				maxYear.set(key);
 			}
-			j++;
+			
+			if(sum < minValue.get())
+			{
+				minValue.set(sum);
+				minYear.set(key);
+			}		
 		}
-		System.out.println("Coolest Year:"+coolest_year);
-		System.out.println("\tTemperature:"+min_temp/10+" Degree Celcius");
-		s.close();
+		
+		@Override protected void cleanup(Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException 
+		{
+			context.write(maxYear,maxValue);
+			context.write(minYear,minValue);
+		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
